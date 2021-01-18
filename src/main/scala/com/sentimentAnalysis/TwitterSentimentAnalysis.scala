@@ -27,7 +27,7 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
     } catch {
       case nullPointerException: NullPointerException =>
         logger.error(nullPointerException.printStackTrace())
-        throw new Exception("Passed Fields Are Null")
+        throw new Exception("Passed fields are null")
     }
   }
 
@@ -37,7 +37,7 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
     * @return StructType
     */
   def extractSchemaFromTwitterData(filePath: String): StructType = {
-    logger.info("Extracting Schema From Twitter Json File")
+    logger.info("Extracting schema from twitter Json file")
     try {
       val twitterData = sparkSession.read
         .json(filePath)
@@ -46,10 +46,10 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
     } catch {
       case nullPointerException: NullPointerException =>
         logger.error(nullPointerException.printStackTrace())
-        throw new Exception("Can not create a Path from a null string")
+        throw new Exception("Can not create a path from a null string")
       case fileNotFoundException: org.apache.spark.sql.AnalysisException =>
         logger.error(fileNotFoundException.printStackTrace())
-        throw new Exception("Twitter Sample file not exist")
+        throw new Exception("Twitter sample file is not exist")
     }
   }
 
@@ -63,7 +63,7 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
       kafkaDF: DataFrame,
       schema: StructType
   ): DataFrame = {
-    logger.info("Processing The Kafka DataFrame")
+    logger.info("Processing the Kafka DataFrame")
     try {
       val twitterStreamDF = kafkaDF
         .selectExpr("CAST(value AS STRING) as jsonData")
@@ -75,7 +75,7 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
     } catch {
       case sparkAnalysisException: org.apache.spark.sql.AnalysisException =>
         logger.error(sparkAnalysisException.printStackTrace())
-        throw new Exception("Unable to Execute Query")
+        throw new Exception("Unable to execute a query")
     }
   }
 
