@@ -1,6 +1,7 @@
 package com.sentimentAnalysis
 
 import com.utilities.Utility
+import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object TwitterSentimentAnalysisDriver {
@@ -25,15 +26,24 @@ object TwitterSentimentAnalysisDriver {
       twitterSentimentAnalysis.extractSchemaFromTwitterData(sampleJsonFile)
     val tweetRawDF =
       twitterSentimentAnalysis.processKafkaDataFrame(kafkaDF, schema)
-    tweetRawDF
+    val cleanedTweetDF =
+      twitterSentimentAnalysis.removeUnwantedWords(tweetRawDF)
+    cleanedTweetDF
   }
+
   // Entry point to an Application
   def main(args: Array[String]): Unit = {
     val broker = System.getenv("BROKER")
     val topic = System.getenv("TOPIC")
     val sampleJsonFile = "./Resources/twitterSchema.json"
-    val tweetRawDF =
+    val cleanedTweetDF =
       readExtractAndProcessKafkaData(broker, topic, sampleJsonFile)
-
+    cleanedTweetDF.writeStream
+      .format("console")
+      .outputMode("append")
+      .option("checkpointLocation", "chk-point-dir")
+      .trigger(Trigger.ProcessingTime("5 seconds"))
+      .start()
+      .awaitTermination()
   }
 }
