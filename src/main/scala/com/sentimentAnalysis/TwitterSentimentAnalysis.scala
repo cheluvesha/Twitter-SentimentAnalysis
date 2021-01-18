@@ -7,6 +7,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class TwitterSentimentAnalysis(sparkSession: SparkSession) {
   val logger: Logger = Logger.getLogger(getClass.getName)
+  sparkSession.udf.register("removeWords", remove)
 
   /** *
     * Reads data from the Kafka Topic
@@ -70,8 +71,9 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
         .select(from_json(col("jsonData"), schema).as("data"))
         .select(col("data.retweeted_status") as "tweet")
       val tweetDF =
-        twitterStreamDF.select(col("tweet.text") as "tweet_string")
-      tweetDF
+        twitterStreamDF.select(col("tweet.text") as "tweet_text")
+      val tweetNonNullDF = tweetDF.na.drop("any")
+      tweetNonNullDF
     } catch {
       case sparkAnalysisException: org.apache.spark.sql.AnalysisException =>
         logger.error(sparkAnalysisException.printStackTrace())
@@ -79,4 +81,47 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
     }
   }
 
+  /** *
+    * UDF for removing unwanted words from hashtag field
+    * @return String
+    */
+  def remove: String => String =
+    (words: String) => {
+      var removeText: String = null
+      if (words != null) {
+        /* Remove # from hashtags, emoji's, hyperlinks, and twitter tags. Replace @mention with empty string,
+          Special characters and Numbers
+         */
+        removeText = words
+          .replaceAll("""(\b\w*RT)|[^a-zA-Z0-9\s\.\,\!,\@]""", "")
+          .replaceAll("(http\\S+)", "")
+          .replaceAll("(@\\w+)", "")
+          .replaceAll("[^a-zA-z]", " ")
+          .replaceAll("\\s{2,}", " ")
+
+      } else {
+        removeText = "null"
+      }
+      removeText
+    }
+
+  /** *
+    * Removing the unwanted words from Hashtags field by applying UDF
+    * @param tweetTextDF DataFrame
+    * @return DataFrame
+    */
+  def removeUnwantedWords(tweetTextDF: DataFrame): DataFrame = {
+    logger.info("Removing the unwanted words from tweet field")
+    try {
+      tweetTextDF.createTempView("remove_words")
+      val removedWordsDF = sparkSession.sql(
+        """select removeWords(tweet_text) as text from remove_words"""
+      )
+      removedWordsDF.na.drop("any")
+    } catch {
+      case sparkAnalysisException: org.apache.spark.sql.AnalysisException =>
+        logger.error(sparkAnalysisException.printStackTrace())
+        throw new Exception("Unable to Execute Query")
+    }
+  }
 }
