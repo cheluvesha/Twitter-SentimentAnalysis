@@ -20,6 +20,7 @@ object Utility {
       val sparkSession = SparkSession
         .builder()
         .master("local[*]")
+        .config("spark.streaming.stopGracefullyOnShutdown", value = true)
         .appName(appName)
         .getOrCreate()
       sparkSession
