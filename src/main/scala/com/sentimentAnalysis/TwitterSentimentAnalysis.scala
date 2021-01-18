@@ -100,7 +100,7 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
           .replaceAll("\\s{2,}", " ")
 
       } else {
-        removeText = "null"
+        removeText = "nothing"
       }
       removeText
     }
@@ -117,7 +117,7 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
       val removedWordsDF = sparkSession.sql(
         """select removeWords(tweet_text) as text from remove_words"""
       )
-      removedWordsDF.na.drop("any")
+      removedWordsDF.where("text != 'nothing'")
     } catch {
       case sparkAnalysisException: org.apache.spark.sql.AnalysisException =>
         logger.error(sparkAnalysisException.printStackTrace())
