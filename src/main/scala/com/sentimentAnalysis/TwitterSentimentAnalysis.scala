@@ -1,6 +1,7 @@
 package com.sentimentAnalysis
 
 import org.apache.log4j.Logger
+import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -49,6 +50,32 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
       case fileNotFoundException: org.apache.spark.sql.AnalysisException =>
         logger.error(fileNotFoundException.printStackTrace())
         throw new Exception("Twitter Sample file not exist")
+    }
+  }
+
+  /** *
+    * Casting, Applying  Schema and Selecting Required Columns From The Kafka DataFrame
+    * @param kafkaDF DataFrame
+    * @param schema  StructType
+    * @return DataFrame
+    */
+  def processKafkaDataFrame(
+      kafkaDF: DataFrame,
+      schema: StructType
+  ): DataFrame = {
+    logger.info("Processing The Kafka DataFrame")
+    try {
+      val twitterStreamDF = kafkaDF
+        .selectExpr("CAST(value AS STRING) as jsonData")
+        .select(from_json(col("jsonData"), schema).as("data"))
+        .select(col("data.retweeted_status") as "tweet")
+      val tweetDF =
+        twitterStreamDF.select(col("tweet.text") as "tweet_string")
+      tweetDF
+    } catch {
+      case sparkAnalysisException: org.apache.spark.sql.AnalysisException =>
+        logger.error(sparkAnalysisException.printStackTrace())
+        throw new Exception("Unable to Execute Query")
     }
   }
 
