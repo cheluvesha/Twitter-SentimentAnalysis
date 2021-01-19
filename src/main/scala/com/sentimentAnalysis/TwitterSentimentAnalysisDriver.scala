@@ -36,11 +36,18 @@ object TwitterSentimentAnalysisDriver {
     val broker = System.getenv("BROKER")
     val topic = System.getenv("TOPIC")
     val sampleJsonFile = "./Resources/twitterSchema.json"
+    val modelFilePath = "./Model/"
     val cleanedTweetDF =
       readExtractAndProcessKafkaData(broker, topic, sampleJsonFile)
-    cleanedTweetDF.writeStream
+    val predictedDF =
+      twitterSentimentAnalysis.applyModelAndPredictTheSentiment(
+        cleanedTweetDF,
+        modelFilePath
+      )
+    predictedDF.writeStream
       .format("console")
       .outputMode("append")
+      .option("truncate", "false")
       .option("checkpointLocation", "chk-point-dir")
       .trigger(Trigger.ProcessingTime("5 seconds"))
       .start()
