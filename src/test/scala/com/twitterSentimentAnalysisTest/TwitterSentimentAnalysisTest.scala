@@ -161,4 +161,15 @@ class TwitterSentimentAnalysisTest extends FunSuite with BeforeAndAfterAll {
         assert(row.getDouble(1) != 0.0)
       })
   }
+  test("givenWrongModelFileAsFilePathShouldThrowAnException") {
+    val cleanedTweetDF =
+      twitterSentimentAnalysis.removeUnwantedWords(negativeDF)
+    val thrown = intercept[Exception] {
+      twitterSentimentAnalysis.applyModelAndPredictTheSentiment(
+        cleanedTweetDF,
+        "wf2bf"
+      )
+    }
+    assert(thrown.getMessage === "Model file path is not exist")
+  }
 }
