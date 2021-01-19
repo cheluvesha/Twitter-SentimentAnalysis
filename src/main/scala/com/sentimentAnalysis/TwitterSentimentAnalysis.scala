@@ -1,6 +1,7 @@
 package com.sentimentAnalysis
 
 import org.apache.log4j.Logger
+import org.apache.spark.ml.PipelineModel
 import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -113,15 +114,41 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
   def removeUnwantedWords(tweetTextDF: DataFrame): DataFrame = {
     logger.info("Removing the unwanted words from tweet field")
     try {
-      tweetTextDF.createTempView("remove_words")
+      tweetTextDF.createOrReplaceTempView("remove_words")
       val removedWordsDF = sparkSession.sql(
-        """select removeWords(tweet_text) as text from remove_words"""
+        """select removeWords(tweet_text) as tweet from remove_words"""
       )
-      removedWordsDF.where("text != 'nothing'")
+
+      removedWordsDF.where("tweet != 'nothing'")
     } catch {
       case sparkAnalysisException: org.apache.spark.sql.AnalysisException =>
         logger.error(sparkAnalysisException.printStackTrace())
         throw new Exception("Unable to Execute Query")
+    }
+  }
+
+  /***
+    * Loading the model from the file and Applying it on DataFrame to predict the sentiment
+    * @param cleanedDF DataFrame
+    * @param modelFilePath String
+    * @return DataFrame
+    */
+  def applyModelAndPredictTheSentiment(
+      cleanedDF: DataFrame,
+      modelFilePath: String
+  ): DataFrame = {
+    try {
+      logger.info("Loading the model and predicting the sentiment")
+      val model = PipelineModel.load(modelFilePath)
+      val predictedDF = model.transform(cleanedDF).select("tweet", "prediction")
+      predictedDF
+    } catch {
+      case sqlAnalysisException: org.apache.spark.sql.AnalysisException =>
+        logger.error(sqlAnalysisException.printStackTrace())
+        throw new Exception("Unable to execute a query")
+      case invalidInputException: org.apache.hadoop.mapred.InvalidInputException =>
+        logger.error(invalidInputException.printStackTrace())
+        throw new Exception("Model file path is not exist")
     }
   }
 }
