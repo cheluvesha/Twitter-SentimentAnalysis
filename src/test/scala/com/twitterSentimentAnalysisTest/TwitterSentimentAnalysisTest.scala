@@ -25,16 +25,27 @@ class TwitterSentimentAnalysisTest extends FunSuite with BeforeAndAfterAll {
     Row("/! was awesome 4545"),
     Row("I'am so happy that i'm learning data engineering http://twitter.com")
   )
+  val negativeData = Seq(
+    Row(
+      "user the pic says otherwise for young girls confined in that kitchen  you are void of meaning  beyond cheap publicity  topoli"
+    )
+  )
+  var negativeDF: DataFrame = _
   val tweetDataSchema: StructType = StructType(
     Array(StructField("tweet_text", StringType))
   )
   var tweetTestDF: DataFrame = _
-
+  var cleanedDF: DataFrame = _
+  val modelFilePath = "./Model/"
   override def beforeAll(): Unit = {
     sparkSession = Utility.createSparkSessionObj("Test")
     twitterSentimentAnalysis = new TwitterSentimentAnalysis(sparkSession)
     tweetTestDF = sparkSession.createDataFrame(
       sparkSession.sparkContext.parallelize(data),
+      tweetDataSchema
+    )
+    negativeDF = sparkSession.createDataFrame(
+      sparkSession.sparkContext.parallelize(negativeData),
       tweetDataSchema
     )
   }
@@ -91,8 +102,8 @@ class TwitterSentimentAnalysisTest extends FunSuite with BeforeAndAfterAll {
     assert(tweetDF.schema.toString != "")
   }
   test("givenWhenTweetTestDFItMustRemoveUnwantedWords") {
-    val tweetDF = twitterSentimentAnalysis.removeUnwantedWords(tweetTestDF)
-    tweetDF
+    cleanedDF = twitterSentimentAnalysis.removeUnwantedWords(tweetTestDF)
+    cleanedDF
       .take(1)
       .foreach(row => {
         assert(row.getString(0) === " was awesome ")
@@ -101,11 +112,53 @@ class TwitterSentimentAnalysisTest extends FunSuite with BeforeAndAfterAll {
   test(
     "givenWhenTweetTestDFItMustRemoveUnwantedWordsAndOutputMustNotEqualAsExpected"
   ) {
-    val tweetDF = twitterSentimentAnalysis.removeUnwantedWords(tweetTestDF)
-    tweetDF
+    val cleanedDF = twitterSentimentAnalysis.removeUnwantedWords(tweetTestDF)
+    cleanedDF
       .take(1)
       .foreach(row => {
         assert(row.getString(0) != "me ")
+      })
+  }
+  test("givenDataFrameAndModelToPredictTheSentiment") {
+    val predictionDF = twitterSentimentAnalysis
+      .applyModelAndPredictTheSentiment(cleanedDF, modelFilePath)
+    predictionDF
+      .take(1)
+      .foreach(row => {
+        assert(row.getDouble(1) === 0.0)
+      })
+  }
+  test("givenDataFrameAndModelToPredictTheSentimentAndO/PMustNotEqual") {
+    val predictionDF = twitterSentimentAnalysis
+      .applyModelAndPredictTheSentiment(cleanedDF, modelFilePath)
+    predictionDF
+      .take(1)
+      .foreach(row => {
+        assert(row.getDouble(1) != 1.0)
+      })
+  }
+  test("givenDataFrameAndModelToPredictTheNegativeSentiment") {
+    val cleanedTweetDF =
+      twitterSentimentAnalysis.removeUnwantedWords(negativeDF)
+    val predictionDF = twitterSentimentAnalysis
+      .applyModelAndPredictTheSentiment(cleanedTweetDF, modelFilePath)
+    predictionDF
+      .take(1)
+      .foreach(row => {
+        assert(row.getDouble(1) === 1.0)
+      })
+  }
+  test(
+    "givenDataFrameAndModelToPredictTheNegativeSentimentAndO/PMustNotEqualAsExpected"
+  ) {
+    val cleanedTweetDF =
+      twitterSentimentAnalysis.removeUnwantedWords(negativeDF)
+    val predictionDF = twitterSentimentAnalysis
+      .applyModelAndPredictTheSentiment(cleanedTweetDF, modelFilePath)
+    predictionDF
+      .take(1)
+      .foreach(row => {
+        assert(row.getDouble(1) != 0.0)
       })
   }
 }
