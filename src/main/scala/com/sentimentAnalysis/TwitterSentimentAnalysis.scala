@@ -3,6 +3,7 @@ package com.sentimentAnalysis
 import org.apache.log4j.Logger
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.sql.functions.{col, from_json}
+import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -149,6 +150,29 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
       case invalidInputException: org.apache.hadoop.mapred.InvalidInputException =>
         logger.error(invalidInputException.printStackTrace())
         throw new Exception("Model file path is not exist")
+    }
+  }
+
+  /***
+    * Writing the stream of DataFrame to CSV file
+    * @param predictedDF DataFrame
+    * @param outputPath String
+    */
+  def writeStreamDataFrame(predictedDF: DataFrame, outputPath: String): Unit = {
+    try {
+      logger.info("Performing writeStream operation on DataFrame")
+      predictedDF.writeStream
+        .format("csv")
+        .option("path", outputPath)
+        .outputMode("append")
+        .option("checkpointLocation", "chk-point-dir")
+        .trigger(Trigger.ProcessingTime("10 seconds"))
+        .start()
+        .awaitTermination()
+    } catch {
+      case nullPointerException: NullPointerException =>
+        logger.error(nullPointerException.printStackTrace())
+        throw new Exception("Null fields passed for output file path")
     }
   }
 }
