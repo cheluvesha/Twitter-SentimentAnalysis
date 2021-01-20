@@ -1,7 +1,6 @@
 package com.sentimentAnalysis
 
 import com.utilities.Utility
-import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object TwitterSentimentAnalysisDriver {
@@ -37,6 +36,7 @@ object TwitterSentimentAnalysisDriver {
     val topic = System.getenv("TOPIC")
     val sampleJsonFile = "./Resources/twitterSchema.json"
     val modelFilePath = "./Model/"
+    val outputPath = "output"
     val cleanedTweetDF =
       readExtractAndProcessKafkaData(broker, topic, sampleJsonFile)
     val predictedDF =
@@ -44,13 +44,6 @@ object TwitterSentimentAnalysisDriver {
         cleanedTweetDF,
         modelFilePath
       )
-    predictedDF.writeStream
-      .format("console")
-      .outputMode("append")
-      .option("truncate", "false")
-      .option("checkpointLocation", "chk-point-dir")
-      .trigger(Trigger.ProcessingTime("5 seconds"))
-      .start()
-      .awaitTermination()
+    twitterSentimentAnalysis.writeStreamDataFrame(predictedDF, outputPath)
   }
 }
