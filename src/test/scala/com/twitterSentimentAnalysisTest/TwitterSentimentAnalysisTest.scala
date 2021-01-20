@@ -172,4 +172,8 @@ class TwitterSentimentAnalysisTest extends FunSuite with BeforeAndAfterAll {
     }
     assert(thrown.getMessage === "Model file path is not exist")
   }
+
+  override def afterAll(): Unit = {
+    sparkSession.stop()
+  }
 }
