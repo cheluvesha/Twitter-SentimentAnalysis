@@ -7,15 +7,19 @@ import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+/***
+  * Class which cleans tweet raw data in order to apply ML model on data to predict sentiment
+  * @param sparkSession SparkSession
+  */
 class TwitterSentimentAnalysis(sparkSession: SparkSession) {
   val logger: Logger = Logger.getLogger(getClass.getName)
   sparkSession.udf.register("removeWords", remove)
 
   /** *
     * Reads data from the Kafka Topic
-    * @param broker String
-    * @param topic  String
-    * @return DataFrame
+    * @param broker String - Kafka broker URL
+    * @param topic  String - Kafka topic name
+    * @return DataFrame - DataFrame which is created by reading data from kafka
     */
   def readDataFromKafka(broker: String, topic: String): DataFrame = {
     logger.info("Reading data from Kafka Topic")
@@ -36,8 +40,8 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
 
   /** *
     * Extracts Schema From Twitter Sample Json File
-    * @param filePath String
-    * @return StructType
+    * @param filePath String - Twitter sample json data
+    * @return StructType - Schema
     */
   def extractSchemaFromTwitterData(filePath: String): StructType = {
     logger.info("Extracting schema from twitter Json file")
@@ -58,9 +62,9 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
 
   /** *
     * Casting, Applying  Schema and Selecting Required Columns From The Kafka DataFrame
-    * @param kafkaDF DataFrame
-    * @param schema  StructType
-    * @return DataFrame
+    * @param kafkaDF DataFrame - DataFrame which is created by reading data from kafka
+    * @param schema  StructType - Custom created schema for twitter data
+    * @return DataFrame - Processed DataFrame
     */
   def processKafkaDataFrame(
       kafkaDF: DataFrame,
@@ -108,8 +112,8 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
     }
 
   /** *
-    * Removing the unwanted words from Hashtags field by applying UDF
-    * @param tweetTextDF DataFrame
+    * Removing the unwanted words from tweet_text field by applying UDF
+    * @param tweetTextDF DataFrame - Tweet raw text DataFrame
     * @return DataFrame
     */
   def removeUnwantedWords(tweetTextDF: DataFrame): DataFrame = {
@@ -130,8 +134,8 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
 
   /***
     * Loading the model from the file and Applying it on DataFrame to predict the sentiment
-    * @param cleanedDF DataFrame
-    * @param modelFilePath String
+    * @param cleanedDF DataFrame - Preprocessed DataFrame
+    * @param modelFilePath String - ML Model file path
     * @return DataFrame
     */
   def applyModelAndPredictTheSentiment(
@@ -155,8 +159,8 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
 
   /***
     * Writing the stream of DataFrame to CSV file
-    * @param predictedDF DataFrame
-    * @param outputPath String
+    * @param predictedDF DataFrame - Prediction column contained DataFrame
+    * @param outputPath String - Output file path
     */
   def writeStreamDataFrame(predictedDF: DataFrame, outputPath: String): Unit = {
     try {
