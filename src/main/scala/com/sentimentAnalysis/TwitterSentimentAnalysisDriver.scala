@@ -3,6 +3,9 @@ package com.sentimentAnalysis
 import com.utilities.Utility
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+/***
+  * Driver class for TwitterSentimentAnalysis
+  */
 object TwitterSentimentAnalysisDriver {
   val sparkSession: SparkSession =
     Utility.createSparkSessionObj("Twitter-SentimentAnalysis")
@@ -10,9 +13,9 @@ object TwitterSentimentAnalysisDriver {
 
   /***
     * Calls respective methods to get tweetRawDF
-    * @param broker String
-    * @param topic String
-    * @param sampleJsonFile String
+    * @param broker String - Kafka Broker
+    * @param topic String - Kafka topic
+    * @param sampleJsonFile String - Twitter sample json file
     * @return DataFrame
     */
   def readExtractAndProcessKafkaData(
