@@ -1,4 +1,4 @@
-## Project Title - Sentiment Analysis with Spark structured streaming with kafka integration.
+## Project Title - Sentiment Analysis with Spark structured streaming and with kafka integration.
 
 ## Project Description 
 
