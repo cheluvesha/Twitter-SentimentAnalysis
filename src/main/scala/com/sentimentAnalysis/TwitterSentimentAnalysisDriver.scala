@@ -1,6 +1,6 @@
 package com.sentimentAnalysis
 
-import com.utilities.Utility
+import com.utilities.{AWSConfiguration, Utility}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 /***
@@ -40,6 +40,8 @@ object TwitterSentimentAnalysisDriver {
     val sampleJsonFile = args(2)
     val modelFilePath = args(3)
     val outputPath = args(4)
+    val awsAccessKey = System.getenv("AWS_ACCESS_KEY_ID")
+    val awsSecretKey = System.getenv("AWS_SECRET_ACCESS_KEY")
     val cleanedTweetDF =
       readExtractAndProcessKafkaData(broker, topic, sampleJsonFile)
     val predictedDF =
@@ -47,6 +49,14 @@ object TwitterSentimentAnalysisDriver {
         cleanedTweetDF,
         modelFilePath
       )
-    twitterSentimentAnalysis.writeStreamDataFrame(predictedDF, outputPath)
+    AWSConfiguration.connectToS3(
+      sparkSession.sparkContext,
+      awsAccessKey,
+      awsSecretKey
+    )
+    twitterSentimentAnalysis.writeStreamDataFrame(
+      predictedDF,
+      outputPath
+    )
   }
 }
