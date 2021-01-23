@@ -1,5 +1,7 @@
 package com.sentimentAnalysis
 
+import com.amazonaws.services.s3.model.AmazonS3Exception
+import com.utilities.BucketCreation
 import org.apache.log4j.Logger
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.sql.functions.{col, from_json}
@@ -158,19 +160,69 @@ class TwitterSentimentAnalysis(sparkSession: SparkSession) {
   }
 
   /***
+    * Writing Data to S3 bucket
+    * @param outputDF DataFrame
+    * @param batchId Long
+    * @param pathToSave String
+    */
+  def writeToOutputPath(
+      outputDF: DataFrame,
+      batchId: Long,
+      pathToSave: String
+  ): Unit = {
+    try {
+      logger.info(
+        "Writing the DataFrame into S3 bucket for the batch: " + batchId
+      )
+      // Extracting bucket name from URL and checking whether bucket exist or not
+      if (pathToSave.startsWith("s3a://")) {
+        val startPosition = pathToSave.indexOf("//") + 2
+        val lastPosition = pathToSave.lastIndexOf("/")
+        val bucketName = pathToSave.substring(startPosition, lastPosition)
+        if (!BucketCreation.checkBucketExistsOrNot(bucketName)) {
+          logger.info("creating a S3 bucket")
+          BucketCreation.createBucket(bucketName)
+        }
+      }
+      outputDF.show()
+      //Saving the output dataframe as csv in the provided path
+      outputDF.write
+        .mode("append")
+        .option("header", value = true)
+        .csv(pathToSave)
+    } catch {
+      case s3Exception: AmazonS3Exception =>
+        logger.error(s3Exception.printStackTrace())
+        throw new Exception("Unable to write data into aws s3 bucket")
+      case nullPointerException: NullPointerException =>
+        logger.error(nullPointerException.printStackTrace())
+        throw new Exception("null fields passed as a parameter")
+    }
+  }
+
+  /***
     * Writing the stream of DataFrame to CSV file
+    *
     * @param predictedDF DataFrame - Prediction column contained DataFrame
     * @param outputPath String - Output file path
     */
-  def writeStreamDataFrame(predictedDF: DataFrame, outputPath: String): Unit = {
+  def writeStreamDataFrame(
+      predictedDF: DataFrame,
+      outputPath: String
+  ): Unit = {
     try {
       logger.info("Performing writeStream operation on DataFrame")
       predictedDF.writeStream
-        .format("csv")
-        .option("path", outputPath)
         .outputMode("append")
         .option("checkpointLocation", "chk-point-dir")
-        .trigger(Trigger.ProcessingTime("10 seconds"))
+        .trigger(Trigger.ProcessingTime("15 seconds"))
+        .foreachBatch((outPutDF: DataFrame, batchId: Long) => {
+          writeToOutputPath(
+            outPutDF,
+            batchId,
+            outputPath
+          )
+        })
         .start()
         .awaitTermination()
     } catch {
