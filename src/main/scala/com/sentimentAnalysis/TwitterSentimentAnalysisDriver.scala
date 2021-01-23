@@ -35,13 +35,11 @@ object TwitterSentimentAnalysisDriver {
 
   // Entry point to an Application
   def main(args: Array[String]): Unit = {
-    val broker = System.getenv("BROKER")
-    val topic = System.getenv("TOPIC")
-    val sampleJsonFile =
-      "/home/cheluvesha/IdeaProjects/Tweet/SentimentAnalysis/Resources/twitterSchema.json"
-    val modelFilePath =
-      "/home/cheluvesha/IdeaProjects/Tweet/SentimentAnalysis/Model"
-    val outputPath = "s3a://sentiment-predicted-tweets/sentimentCSV"
+    val broker = args(0)
+    val topic = args(1)
+    val sampleJsonFile = args(2)
+    val modelFilePath = args(3)
+    val outputPath = args(4)
     val awsAccessKey = System.getenv("AWS_ACCESS_KEY_ID")
     val awsSecretKey = System.getenv("AWS_SECRET_ACCESS_KEY")
     val cleanedTweetDF =
