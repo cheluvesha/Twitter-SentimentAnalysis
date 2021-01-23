@@ -35,11 +35,11 @@ object TwitterSentimentAnalysisDriver {
 
   // Entry point to an Application
   def main(args: Array[String]): Unit = {
-    val broker = System.getenv("BROKER")
-    val topic = System.getenv("TOPIC")
-    val sampleJsonFile = args(0)
-    val modelFilePath = args(1)
-    val outputPath = args(2)
+    val broker = args(0)
+    val topic = args(1)
+    val sampleJsonFile = args(2)
+    val modelFilePath = args(3)
+    val outputPath = args(4)
     val cleanedTweetDF =
       readExtractAndProcessKafkaData(broker, topic, sampleJsonFile)
     val predictedDF =
