@@ -39,10 +39,8 @@ sbt-scoverage - 1.6.1 - code coverage tool
     to generate scoverage report use "sbt coverageReport"  
     
     jar file which takes 3 arguments as an input
-    args(0) - broker url
-    args(1) - topic name
-    args(2) - sample json file for schema
-    args(3) - Model file path
-    args(4) - S3 path
+    args(0) - sample json file for schema
+    args(1) - Model file path
+    args(2) - Output path
     
      
