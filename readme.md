@@ -15,6 +15,9 @@ scalatest - 3.0.1 - scala test,
 Spark-streaming-kafka-0-10 - 3.0.0 - Helps to integrate spark streaming with kafka,
 Spark-sql-kafka-0-10 - 3.0.0 - Source For Structured Streaming,
 spark-mllib - 3.0.0 -  Spark Machine learning library,
+hadoop-common - 3.2.1 - collection of common utilities and libraries that support other Hadoop modules
+hadoop-aws - 3.2.1 - Hadoop and AWS module provides support for AWS integration
+aws-s3-scala - 0.0.15 - Provides AWS SDK
 kafka-clients - 2.4.1 - Kafka connector.
 
 ## Plugins Used
