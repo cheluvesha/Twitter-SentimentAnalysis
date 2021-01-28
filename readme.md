@@ -1,3 +1,11 @@
+## Project Title - Sentiment Analysis with Spark structured streaming and with kafka integration.
+
+## Project Description 
+
+### Reading twitter data which is published into kafka topic from twitter streaming,
+### applying the transformations to perform data cleansing and applying the trained model on preprocessed data
+### for predicting a sentiment for the tweet text.
+
 ## Dependencies required:
 
 Spark-Core - 3.0.0 - Base of Spark application project,
